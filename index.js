@@ -6,6 +6,9 @@ canvas.height = innerHeight;
 const ctx = canvas.getContext("2d");
 
 const config = document.getElementById("config");
+const play = document.getElementById("play");
+
+let raf;
 
 const initial = {
   x: 50,
@@ -48,128 +51,146 @@ class Ball {
   }
 }
 
-const ball = new Ball(
-  initial.x,
-  initial.y,
-  initial.r,
-  initial.vX,
-  initial.vY,
-  initial.color
-);
+const startAnimation = () => {
+  const ball = new Ball(
+    initial.x,
+    initial.y,
+    initial.r,
+    initial.vX,
+    initial.vY,
+    initial.color
+  );
 
-const balls = [];
+  let balls = [];
 
-let playTime = 0;
+  const animate = () => {
+    // clear previous canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-const animate = () => {
-  // timeout for animation play
-  if (playTime > 35*1000) {
-    return;
-  }
-  // clear previous canvas
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // gravitational effect
-
-  if (ball.hitTimes > 14) {
-    ball.vY *= 0.0094; // decelerate after 15 hits in y
-    ball.vX *= 0.9921; //decelerate after 15 hits in x
-  } else {
-    ball.vY *= 0.99; //decelerate
-    ball.vY += 0.399; //pull
-    ball.vX *= 0.999; //decelerate
-  }
-
-  if (
-    ball.y + ball.vY > canvas.height - (initial.y-2) ||
-    ball.y + ball.vY < initial.y
-  ) {
-    ball.vY = -ball.vY;
-    if (!ball.directionY) {
-      ball.hitTimes++;
-      ball.directionY = true;
+    ball.color = "#" + (((1 << 24) * Math.random()) | 0).toString(16);
+  
+    // gravitational effect
+  
+    if (ball.hitTimes > 14) {
+      ball.vY *= 0.0094; // decelerate after 15 hits in y
+      ball.vX *= 0.9921; //decelerate after 15 hits in x
     } else {
-      ball.directionY = false;
+      ball.vY *= 0.99; //decelerate
+      ball.vY += 0.399; //pull
+      ball.vX *= 0.999; //decelerate
     }
-  }
-
-  if (
-    ball.x + ball.vX > canvas.width - initial.x ||
-    ball.x + ball.vX < initial.x
-  ) {
-    ball.vX = -ball.vX;
-  }
-
-  ball.y += ball.vY;
-  ball.x += ball.vX;
-
-  // draw the ball
-  ball.draw();
-
-  // filling balls
-
-  if (!ball.explode && ball.hitTimes === 1) {
-    for (let i = 0; i < 30; i++) {
-      balls.push(
-        new Ball(
-          ball.x,
-          ball.y,
-          ball.r,
-          ball.vX * (Math.random() + 0.124),
-          ball.vY * (Math.random() + 0.0024),
-          "#" + (((1 << 24) * Math.random()) | 0).toString(16)
-        )
-      );
-    }
-    ball.explode = true;
-  }
-
-  // balls explosion
-  balls.forEach((b) => {
-    if (b.y + b.vY > canvas.height - (initial.y + 2) || b.y + b.vY < initial.y) {
-      b.vY = -b.vY;
-      playTime++
-      if (!b.directionY) {
-        b.hitTimes++;
-        b.directionY = true;
+  
+    if (
+      ball.y + ball.vY > canvas.height - (initial.y - 2) ||
+      ball.y + ball.vY < initial.y
+    ) {
+      ball.vY = -ball.vY;
+      if (!ball.directionY) {
+        ball.hitTimes++;
+        ball.directionY = true;
       } else {
-        b.directionY = false;
+        ball.directionY = false;
       }
     }
-
-    if (b.y > canvas.height) {
-      b.hitTimes++;
+  
+    if (
+      ball.x + ball.vX > canvas.width - initial.x ||
+      ball.x + ball.vX < initial.x
+    ) {
+      ball.vX = -ball.vX;
     }
-
-    if (b.x + b.vX > canvas.width - initial.x || b.x + b.vX < initial.x) {
-      b.vX = -b.vX;
+  
+    ball.y += ball.vY;
+    ball.x += ball.vX;
+  
+    // draw the ball
+    ball.draw();
+  
+    // filling balls
+  
+    if (!ball.explode && ball.hitTimes === 1) {
+      for (let i = 0; i < 40; i++) {
+        balls.push(
+          new Ball(
+            ball.x,
+            ball.y,
+            ball.r*0.2,
+            ball.vX * (Math.random() + 0.124),
+            ball.vY * (Math.random() + 0.0024),
+            "#" + (((1 << 24) * Math.random()) | 0).toString(16)
+          )
+        );
+      }
+      ball.explode = true;
     }
+  
+    // balls explosion
+    balls.forEach((b) => {
+      if (
+        b.y + b.vY > canvas.height - (initial.y - 3.8*b.r) ||
+        b.y + b.vY < initial.y
+      ) {
+        b.vY = -b.vY;
+        if (!b.directionY) {
+          b.hitTimes++;
+          b.directionY = true;
+        } else {
+          b.directionY = false;
+        }
+      }
+  
+      if (b.y > canvas.height) {
+        b.hitTimes++;
+      }
+  
+      if (b.x + b.vX > canvas.width - initial.x || b.x + b.vX < initial.x) {
+        b.vX = -b.vX;
+      }
+  
+      if (b.hitTimes > 14) {
+        b.vY *= 0.009; // decelerate after  14 hits in y
+        b.vX *= 0.9921; //decelerate after 14 hits in x
+      } else {
+        b.vY *= 0.999; //decelerate in y direction
+        b.vY += 0.289; //pull
+        b.vX *= 0.999; //decelerate in x direction
+      }
+  
+      b.y += b.vY;
+      b.x += b.vX;
+      b.draw();
+    });
+  
+    // configuration details
+    config.innerHTML = `<div>
+    <div style="text-transform:uppercase; padding:.4em 0 .4em 0;">Main Ball Configurations</div>
+    <div>x : ${ball.x}</div>
+    <div>y : ${ball.y}</div>
+    <div>vX : ${ball.vX}</div>
+    <div>vY : ${ball.vY}</div>
+    <div>Direction: ${!ball.directionY ? "👇" : "👆"}</div>
+    <div>Hit: ${ball.hitTimes}</div>
+    <div>No. of exploded balls: ${balls.length}</div>
+    </div>`;
+  
+    raf = requestAnimationFrame(animate);
+  };
 
-    if (b.hitTimes > 14) {
-      b.vY *= 0.009; // decelerate after  14 hits in y
-      b.vX *= 0.9921; //decelerate after 14 hits in x
-    } else {
-      b.vY *= 0.999; //decelerate in y direction
-      b.vY += 0.289; //pull
-      b.vX *= 0.999; //decelerate in x direction
-    }
+  animate();
+}
 
-    b.y += b.vY;
-    b.x += b.vX;
-    b.draw();
-  });
+play.addEventListener("click", () => {
+  if (!raf) {
+    play.innerHTML = 'STOP ‼️'
+    startAnimation();
+  } else {
+    play.innerHTML = 'PLAY 👇😎'
+    cancelAnimationFrame(raf);
+    raf = undefined;
+  }
+});
 
-  // configuration details
-  config.innerHTML = `<div>x : ${ball.x}</div>
-  <div>y : ${ball.y}</div>
-  <div>vX : ${ball.vX}</div>
-  <div>vY : ${ball.vY}</div>
-  <div>Direction: ${!ball.directionY ? "👇" : "👆"}</div>
-  <div>Main Ball Hit: ${ball.hitTimes}</div>
-  <div>No. of exploded balls: ${balls.length}</div>
-  <div>Play Time: ${playTime/1000}</div>`;
-
-  requestAnimationFrame(animate);
+onresize = () => {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
 };
-
-animate();
